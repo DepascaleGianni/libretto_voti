@@ -1,5 +1,7 @@
+import operator
 from dataclasses import dataclass
-@dataclass
+from operator import attrgetter
+@dataclass()
 class Voto:
     esame: str
     cfu : int
@@ -21,10 +23,13 @@ class Voto:
             return f"{self.punteggio}"
 
     def __str__(self):
-            return f"Esame {self.esame} superato con {self.punteggio}"
+            return f"Esame {self.esame} ({self.cfu} cfu) superato con {self.punteggio} in {self.data}"
 
     def __repr__(self):
         return f"Voto('{self.esame}', {self.cfu}, {self.punteggio}, {self.lode}, '{self.data}')"
+
+    def copy(self):
+        return Voto(self.esame,self.cfu,self.punteggio,self.lode,self.data)
 
 
 class Libretto:
@@ -90,4 +95,74 @@ class Libretto:
             if v.esame == voto.esame and not (v.lode == voto.lode and v.punteggio == voto.punteggio):
                 return True
         return False
+
+    def copy(self):
+        l = Libretto()
+        for v in self._voti:
+            l._voti.append(v.copy())
+        return l
+
+    def crea_migliorato(self):
+        """
+        Crea una copia del libretto migliorandone i voti presenti
+        :return:
+        """
+        # l._voti = self._voti.copy() posso usare se cambio la lista ma qui
+        # cambio i contenuti quindi non va bene perchè cambio anche l'originale
+        l = self.copy()
+        for el in l._voti:
+            if 18 <=el.punteggio <= 23:
+                el.punteggio += 1
+            elif 24 <=el.punteggio <= 28:
+                el.punteggio += 2
+            elif el.punteggio == 29:
+                el.punteggio = 30
+
+        return l
+
+    def stampa(self):
+        print(f"Hai {len(self._voti)} voti:")
+        for v in self._voti:
+            print(v)
+        print(f"la media vale {self.media()}")
+
+    def stampaGUI(self):
+        outList = []
+        outList.append(f"Hai {len(self._voti)} voti")
+        for v in self._voti:
+            outList.append(v)
+        outList.append(f"la media vale {self.media()}")
+        return outList
+
+    """
+    opzione 1 : stampaPerNome e stampaPerPunteggio che stampano e non modificano nulla
+    
+    pzione 2 : crea_lib_per_nome e crea_lib_ord_per_voto
+    
+    opzione 3 : crea metodo ordina_per_nome o per punt che modificano il libretto stesso aggiungendo metodo copy()
+    
+    """
+    def crea_ord_per_esame(self):
+        nuovo = self.copy()
+        nuovo.ordina_per_esame()
+        return nuovo
+
+    def ordina_per_esame(self):
+        self._voti.sort(key=operator.attrgetter('esame'))
+        #self._voti.sort(key=lambda v:v.esame) quando devo ordinare non direttamente con attr
+        return self
+
+    """
+    opzioni
+    1: creo lt per l'oggetto che voglio ordinare e chiamo direttamente sort
+    2: chiamo sort passandogli una funziona che estrae elementi definiti e su cui viene applicato il metodo lt
+    """
+    def crea_ord_per_punteggio(self):
+        nuovo = self.copy()
+        nuovo._voti.sort(key=lambda v: (v.punteggio,v.lode),reverse=True)
+        return nuovo
+
+    def cancella_inferiori(self,punteggio):
+        self._voti = [v for v in self._voti if v.punteggio >= punteggio]
+
 
